@@ -1,0 +1,54 @@
+/* style.css */
+/* --- গ্লোবাল স্টাইল --- */
+body { 
+    display: flex; justify-content: center; align-items: center; 
+    height: 100vh; margin: 0; 
+    background-color: #0f0a1c; 
+    font-family: 'Orbitron', sans-serif; 
+    user-select: none; touch-action: manipulation;
+}
+#game-container {
+    position: relative;
+    border: 8px solid #00FFFF; 
+    box-shadow: 0 0 50px rgba(0, 255, 255, 0.9); 
+    overflow: hidden; 
+    touch-action: manipulation;
+}
+canvas { display: block; }
+
+/* --- UI Overlay --- */
+.overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+    background-color: rgba(0, 0, 0, 0.98);
+    color: white; display: flex; flex-direction: column; justify-content: center; 
+    align-items: center; text-align: center; z-index: 10;
+    opacity: 0; transition: opacity 0.5s ease-in-out; pointer-events: none; 
+}
+.overlay.active { opacity: 1; pointer-events: auto; }
+h1 { font-size: 4.5em; color: #FF00FF; margin-bottom: 5px; text-shadow: 0 0 10px #FF00FF; } 
+h2 { font-size: 1.8em; color: #00FFFF; margin-top: 5px; text-shadow: 0 0 5px #00FFFF; }
+p.control-hint { font-size: 1.1em; color: #888; margin-top: 15px;}
+p.developer-credit { font-size: 0.9em; color: #444; margin-top: 20px;}
+
+/* --- বাটন ডিজাইন (নিওন লুক) --- */
+button {
+    padding: 15px 35px; margin-top: 30px; font-size: 1.4em; cursor: pointer;
+    background-color: #FF00FF; border: 2px solid #00FFFF;
+    color: #0f0a1c; 
+    border-radius: 5px;
+    box-shadow: 0 0 15px #FF00FF, inset 0 0 5px #00FFFF;
+    transition: all 0.15s;
+}
+button:hover { background-color: #00FFFF; box-shadow: 0 0 20px #00FFFF, inset 0 0 5px #FF00FF; }
+button:active { transform: scale(0.95); }
+
+/* --- স্কোর ডিসপ্লে (নিওন) --- */
+#score-display {
+    position: absolute; top: 15px; left: 15px; color: #00FFFF; 
+    font-size: 1.8em; padding: 8px 18px; background: rgba(0, 0, 0, 0.8);
+    border-radius: 5px; letter-spacing: 3px; font-weight: bold;
+    text-shadow: 0 0 8px #00FFFF;
+    border: 1px solid #00FFFF;
+}
+
+#touch-area { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; cursor: pointer; }
