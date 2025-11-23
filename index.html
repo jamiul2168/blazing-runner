@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BLAZING RUNNER | FINAL SINGLE FILE</title>
+    <title>BLAZING RUNNER | Ultimate Settings</title>
     
     <meta name="author" content="Jamiul Hasan">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet"> 
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght[400;700]&display=swap" rel="stylesheet"> 
     
     <style>
         /* সমস্ত CSS স্টাইল এখানে */
@@ -42,7 +42,7 @@
 
         /* বাটন ডিজাইন */
         button {
-            padding: 15px 35px; margin-top: 30px; font-size: 1.4em; cursor: pointer;
+            padding: 15px 35px; margin-top: 20px; font-size: 1.4em; cursor: pointer;
             background-color: #FF00FF; border: 2px solid #00FFFF;
             color: #0f0a1c; 
             border-radius: 5px;
@@ -52,6 +52,26 @@
         button:hover { background-color: #00FFFF; box-shadow: 0 0 20px #00FFFF, inset 0 0 5px #FF00FF; }
         button:active { transform: scale(0.95); }
 
+        /* Settings Grid */
+        #settings-menu {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .setting-button {
+            padding: 10px;
+            font-size: 1.1em;
+            background-color: #333;
+            color: white;
+            border: 1px solid #00FFFF;
+        }
+        .setting-button.selected {
+            background-color: #00FFFF;
+            color: #0f0a1c;
+            box-shadow: 0 0 10px #00FFFF;
+        }
+
         /* স্কোর ডিসপ্লে */
         #score-display {
             position: absolute; top: 15px; left: 15px; color: #00FFFF; 
@@ -59,6 +79,23 @@
             border-radius: 5px; letter-spacing: 3px; font-weight: bold;
             text-shadow: 0 0 8px #00FFFF;
             border: 1px solid #00FFFF;
+        }
+        #mobile-jump-icon {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            width: 80px;
+            height: 80px;
+            background-color: rgba(0, 255, 255, 0.3);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3em;
+            color: white;
+            pointer-events: none; /* যাতে টাচ এরিয়া কাজ করে */
+            opacity: 0;
+            transition: opacity 0.3s;
         }
 
         #touch-area { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; cursor: pointer; }
@@ -70,10 +107,18 @@
         
         <div id="score-display">SCORE: 000000</div>
         <div id="touch-area"></div>
-        
-        <div id="start-screen" class="overlay active">
+        <div id="mobile-jump-icon">👆</div> <div id="start-screen" class="overlay active">
             <h1>BLAZING RUNNER</h1>
             <h2>ULTRA-FAST ARCADE ACTION</h2>
+            
+            <div id="settings-menu">
+                <button class="setting-button" data-setting="speed" data-value="easy" id="diff-easy">EASY</button>
+                <button class="setting-button selected" data-setting="speed" data-value="normal" id="diff-normal">NORMAL</button>
+                <button class="setting-button" data-setting="speed" data-value="hard" id="diff-hard">HARD</button>
+                <button class="setting-button selected" data-setting="control" data-value="visible" id="ctrl-visible">CONTROL VISIBLE</button>
+                <button class="setting-button" data-setting="control" data-value="hidden" id="ctrl-hidden">CONTROL HIDDEN</button>
+            </div>
+            
             <button id="startButton">START RUN</button>
             <p class="control-hint">Tap anywhere or press SPACE to jump.</p>
             <p class="developer-credit">Developed by: Jamiul Hasan | <a href="https://facebook.com/jamiul2168" target="_blank" style="color:#00FFFF;">jamiul2168</a></p>
@@ -88,7 +133,6 @@
     </div>
 
     <script>
-        // সমস্ত গেম লজিক window.addEventListener('load', ...) এর মধ্যে আবদ্ধ করা হয়েছে DOM লোডিং নিশ্চিত করতে
         window.addEventListener('load', function() {
             // --- 1. GAMESTATE & CONFIGS ---
             const GameState = { READY: 'READY', RUNNING: 'RUNNING', OVER: 'OVER' };
@@ -102,14 +146,26 @@
             const startScreen = document.getElementById('start-screen');
             const touchArea = document.getElementById('touch-area');
             const startButton = document.getElementById('startButton');
+            const mobileJumpIcon = document.getElementById('mobile-jump-icon');
 
             const GROUND_Y = canvas.height - 40;
-            const INITIAL_SPEED = 300; 
-            const MAX_SPEED = 700; 
-            const MAX_JUMP_VELOCITY = -550; 
-            const FPS_MULTIPLIER = 1000; 
+            
+            // DIFFICULTY SETTINGS (NEW)
+            const BASE_SPEED = 300;
+            const BASE_GRAVITY = 1800;
+            const BASE_JUMP = -550;
 
-            // AI CONFIG
+            const SETTINGS = {
+                'easy': { speed: BASE_SPEED * 0.8, gravity: BASE_GRAVITY * 0.8, jump: BASE_JUMP * 0.9 },
+                'normal': { speed: BASE_SPEED, gravity: BASE_GRAVITY, jump: BASE_JUMP },
+                'hard': { speed: BASE_SPEED * 1.2, gravity: BASE_GRAVITY * 1.1, jump: BASE_JUMP * 1.1 },
+                'selected_speed': 'normal',
+                'controls_visible': true 
+            };
+            
+            // --- CORE CONSTANTS ---
+            const MAX_SPEED = 700; 
+            const FPS_MULTIPLIER = 1000; 
             const AI_SUCCESS_THRESHOLD = 5; 
             const AI_GRAVITY_MODIFIER = 200; 
             const DIFFICULTY_INCREMENT = 3; 
@@ -118,7 +174,7 @@
             const GROUND_TILE_WIDTH = 50; 
 
             // --- 2. GLOBAL VARIABLES ---
-            let GAME_SPEED = INITIAL_SPEED;
+            let GAME_SPEED = SETTINGS.normal.speed;
             let score = 0;
             let highScore = 0;
             let lastBoostScore = 0;
@@ -133,43 +189,62 @@
             let lastObstacleSpawnedTime = 0;
 
 
-            // --- 3. SOUND MANAGER (Class definition) ---
+            // --- 3. SOUND MANAGER (AUDIO CONTEXT FIX) ---
             const ASSET_PATH = 'assets/';
+            let audioContext;
 
             class SoundManager {
                 constructor() {
-                    this.jumpSound = this.loadSound('jump.mp3'); 
-                    this.gameOverSound = this.loadSound('game_over.mp3'); 
-                    this.boostSound = { play: () => console.warn("Boost sound not available.") };
-                }
-
-                loadSound(filename) {
                     try {
-                        const audio = new Audio(ASSET_PATH + filename);
-                        audio.preload = 'auto'; 
-                        return audio;
+                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
                     } catch (e) {
-                        return { play: () => console.warn(`Sound file not available: ${filename}`) };
+                        console.warn('Web Audio API not supported. Using standard Audio.');
+                        audioContext = null;
                     }
+
+                    this.jumpBuffer = this.loadAudioBuffer('jump.mp3');
+                    this.gameOverBuffer = this.loadAudioBuffer('game_over.mp3'); 
+                }
+                
+                // AudioContext ব্যবহার করে ফাইল লোড করা
+                loadAudioBuffer(filename) {
+                    if (!audioContext) return null;
+                    const request = new XMLHttpRequest();
+                    request.open('GET', ASSET_PATH + filename, true);
+                    request.responseType = 'arraybuffer';
+                    
+                    return new Promise(resolve => {
+                        request.onload = function() {
+                            audioContext.decodeAudioData(request.response, function(buffer) {
+                                resolve(buffer);
+                            }, e => console.error(`Error decoding ${filename}:`, e));
+                        };
+                        request.send();
+                    });
                 }
 
-                playSound(audioElement) {
-                    if (audioElement && audioElement.src) {
-                        audioElement.currentTime = 0; 
-                        audioElement.play().catch(e => {
-                            console.warn("Sound playback blocked by browser policy. Try interacting first.", e);
-                        });
-                    }
+                // AudioContext ব্যবহার করে সাউন্ড প্লে করা
+                play(bufferPromise) {
+                    if (!audioContext) return;
+                    bufferPromise.then(buffer => {
+                        if (buffer) {
+                            const source = audioContext.createBufferSource();
+                            source.buffer = buffer;
+                            source.connect(audioContext.destination);
+                            source.start(0);
+                        }
+                    });
                 }
 
-                playJump() { this.playSound(this.jumpSound); }
-                playGameOver() { this.playSound(this.gameOverSound); }
-                playBoost() { this.boostSound.play(); } 
+                playJump() { this.play(this.jumpBuffer); }
+                playGameOver() { this.play(this.gameOverBuffer); }
+                playBoost() { /* No Boost sound */ } 
             }
             
             // --- 4. ENTITIES (Class definitions) ---
 
             class Mountains {
+                // ... (আগের কোড - অপরিবর্তিত) ...
                 constructor(canvas, GROUND_Y) {
                     this.ctx = canvas.getContext('2d');
                     this.width = canvas.width;
@@ -206,7 +281,7 @@
                     this.GROUND_Y = GROUND_Y;
                     this.MAX_JUMP_VELOCITY = MAX_JUMP_VELOCITY; 
 
-                    this.baseGravity = 1800; 
+                    this.baseGravity = BASE_GRAVITY; 
                     this.baseMaxJumpVelocity = MAX_JUMP_VELOCITY; 
 
                     this.gravity = this.baseGravity; 
@@ -223,11 +298,13 @@
                     this.velocityY = 0;
                     this.isJumping = false;
                     this.successfulJumps = 0; 
-                    this.gravity = this.baseGravity; 
-                    this.MAX_JUMP_VELOCITY = this.baseMaxJumpVelocity; 
+                    // রিসেট করার সময় সেটিং থেকে মান নেওয়া হবে (নতুন লজিক)
+                    this.gravity = SETTINGS[SETTINGS.selected_speed].gravity; 
+                    this.MAX_JUMP_VELOCITY = SETTINGS[SETTINGS.selected_speed].jump; 
                 }
 
                 draw(frameCount, gameState) {
+                    // ... (আগের draw কোড - অপরিবর্তিত) ...
                     this.ctx.shadowColor = '#FF00FF'; 
                     this.ctx.shadowBlur = 10;
                     this.ctx.fillStyle = '#FF00FF'; 
@@ -271,6 +348,7 @@
             }
 
             class Obstacle {
+                // ... (আগের Obstacle কোড - অপরিবর্তিত) ...
                 constructor(canvas, GROUND_Y, customHeight) {
                     this.ctx = canvas.getContext('2d');
                     this.width = Math.random() * 20 + 20;
@@ -296,21 +374,25 @@
 
             // --- 5. GAME LOGIC CORE ---
             
-            // গ্লোবাল ইনস্ট্যান্স (সবকিছু এখন DOM লোড হওয়ার পরে নিরাপদে তৈরি হবে)
+            // গ্লোবাল ইনস্ট্যান্স
             let soundManager;
             let mountains;
             let player;
             let obstacles = [];
 
-            // গেম অবজেক্ট ইনিশিয়ালাইজার
             function initializeGameObjects() {
-                soundManager = new SoundManager();
+                // AudioContext ইনিশিয়ালাইজেশন: ইউজার ইন্টারেকশনের সময় কল হবে
+                if (!soundManager) soundManager = new SoundManager();
+                
+                // Player এর প্যারামিটার সেটিং থেকে নেওয়া হবে
                 mountains = new Mountains(canvas, GROUND_Y); 
-                player = new Player(canvas, GROUND_Y, MAX_JUMP_VELOCITY, soundManager);
+                player = new Player(canvas, GROUND_Y, SETTINGS[SETTINGS.selected_speed].jump, soundManager);
                 obstacles = []; 
+                GAME_SPEED = SETTINGS[SETTINGS.selected_speed].speed; // গেমের গতি সেটিং থেকে সেট করা
             }
 
             function drawGround() {
+                // ... (আগের drawGround কোড - অপরিবর্তিত) ...
                 const FIXED_MOVEMENT = (GAME_SPEED / 1000) * (1000/60); 
                 groundX = (groundX - FIXED_MOVEMENT) % GROUND_TILE_WIDTH;
                 
@@ -338,6 +420,7 @@
             }
 
             function dynamicDifficulty() {
+                // ... (AI logic - অপরিবর্তিত) ...
                 if (GAME_SPEED < MAX_SPEED) {
                     GAME_SPEED += (DIFFICULTY_INCREMENT / FPS_MULTIPLIER) * deltaTime;
                 }
@@ -368,6 +451,7 @@
 
             let obstacleSpawnTimer = 0;
             function generateObstacles() {
+                // ... (আগের generateObstacles কোড - অপরিবর্তিত) ...
                 const spawnGap = dynamicDifficulty();
 
                 if (obstacleSpawnTimer <= 0) {
@@ -396,6 +480,7 @@
             }
 
             function trackPlayerSuccess() {
+                // ... (আগের trackPlayerSuccess কোড - অপরিবর্তিত) ...
                 if (!player) return;
                 const playerBaseY = player.GROUND_Y - player.height;
                 
@@ -412,7 +497,8 @@
             }
 
             function checkCollision() {
-                if (!player) return false;
+                // ... (আগের checkCollision কোড - অপরিবর্তিত) ...
+                 if (!player) return false;
                 const playerHitbox = player.getHitbox();
                 for (let i = 0; i < obstacles.length; i++) {
                     let obs = obstacles[i];
@@ -431,12 +517,14 @@
             }
 
             function resetGame() {
+                // ... (আগের resetGame কোড) ...
                 if (score > highScore) {
                     highScore = score;
                     localStorage.setItem('runnerHighScore', highScore);
                 }
                 score = 0;
-                GAME_SPEED = INITIAL_SPEED;
+                // গতির মান সেটিং থেকে নেওয়া হয়েছে
+                GAME_SPEED = SETTINGS[SETTINGS.selected_speed].speed;
                 lastBoostScore = 0;
                 obstacles = [];
                 if (player) player.reset();
@@ -447,8 +535,14 @@
             function startGame() {
                 if (gameState === GameState.RUNNING) return;
                 
+                // গেম শুরু করার সময় সমস্ত অবজেক্ট ইনিশিয়ালাইজ করা
                 if (!player) {
                     initializeGameObjects();
+                }
+                
+                // AudioContext Resume/Start (সাউন্ড ফিক্স)
+                if (audioContext && audioContext.state === 'suspended') {
+                    audioContext.resume();
                 }
 
                 gameState = GameState.RUNNING;
@@ -461,6 +555,7 @@
             }
 
             function endGame() {
+                // ... (আগের endGame কোড - অপরিবর্তিত) ...
                 if (gameState === GameState.OVER) return;
                 gameState = GameState.OVER;
                 cancelAnimationFrame(animationFrameId);
@@ -473,6 +568,7 @@
             }
 
             function gameLoop(currentTime) {
+                // ... (আগের gameLoop কোড - অপরিবর্তিত) ...
                 deltaTime = currentTime - lastTime;
                 lastTime = currentTime;
                 const dt = deltaTime / FPS_MULTIPLIER; 
@@ -518,7 +614,7 @@
                 animationFrameId = requestAnimationFrame(gameLoop);
             }
 
-            // --- 6. INPUT HANDLING ---
+            // --- 6. INPUT HANDLING & SETTINGS (NEW) ---
             function handleJumpInput(event) {
                 if (event && event.type === 'touchstart') { event.preventDefault(); }
                 
@@ -529,6 +625,33 @@
                     jumpFlashTimer = 1; 
                 }
             }
+            
+            // কন্ট্রোল ভিজিবিলিটি আপডেট করা
+            function updateControlVisibility() {
+                mobileJumpIcon.style.opacity = SETTINGS.controls_visible ? 1 : 0;
+            }
+
+            // সেটিং বাটন হ্যান্ডেল করা
+            document.querySelectorAll('.setting-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const settingType = this.dataset.setting;
+                    const value = this.dataset.value;
+                    
+                    // ক্লাস আপডেট (সিলেক্টেড এফেক্ট)
+                    document.querySelectorAll(`[data-setting="${settingType}"]`).forEach(btn => {
+                        btn.classList.remove('selected');
+                    });
+                    this.classList.add('selected');
+
+                    if (settingType === 'speed') {
+                        SETTINGS.selected_speed = value;
+                    } else if (settingType === 'control') {
+                        SETTINGS.controls_visible = (value === 'visible');
+                        updateControlVisibility();
+                    }
+                });
+            });
+
 
             // ইভেন্ট লিসেনার সেটআপ
             document.addEventListener('keydown', (event) => {
@@ -547,6 +670,9 @@
             // হাই স্কোর লোড ও ডিসপ্লে
             highScore = localStorage.getItem('runnerHighScore') || 0;
             document.getElementById('final-score').innerHTML = `High Score: ${highScore.toString().padStart(6, '0')}`;
+            
+            // প্রাথমিক ভিজিবিলিটি সেট করা
+            updateControlVisibility(); 
         });
     </script>
 </body>
