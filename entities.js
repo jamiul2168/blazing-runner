@@ -1,5 +1,4 @@
 // entities.js
-// 'game.js' থেকে GameState ইম্পোর্ট করা হয়েছে
 import { GameState } from './game.js'; 
 
 // --- ব্যাকগ্রাউন্ড এলিমেন্ট: Parallax Mountains ---
@@ -11,7 +10,6 @@ export class Mountains {
         this.mountainX = 0;
     }
     draw(GAME_SPEED) {
-        // Delta Time এর সমতা বজায় রাখার জন্য একটি অনুমানমূলক মান
         const speedFactor = 0.2; 
         const FIXED_MOVEMENT = (GAME_SPEED / 1000) * (1000/60); 
 
@@ -40,19 +38,18 @@ export class Player {
         this.ctx = canvas.getContext('2d');
         this.soundManager = soundManager;
         this.GROUND_Y = GROUND_Y;
+        this.MAX_JUMP_VELOCITY = MAX_JUMP_VELOCITY; 
 
-        this.baseGravity = 1800; // (px/s^2)
-        this.baseMaxJumpVelocity = MAX_JUMP_VELOCITY; // (px/s)
+        this.baseGravity = 1800; 
+        this.baseMaxJumpVelocity = MAX_JUMP_VELOCITY; 
 
         this.gravity = this.baseGravity; 
-        this.MAX_JUMP_VELOCITY = this.baseMaxJumpVelocity; 
         
         this.initialY = GROUND_Y - 50;
         this.x = 50; this.y = this.initialY; this.width = 30; this.height = 50;
         this.velocityY = 0; this.isJumping = false;
         this.hitboxOffset = {x: 5, y: 5, width: -10, height: -5}; 
 
-        // AI ট্র্যাকিং ভেরিয়েবল
         this.successfulJumps = 0; 
     }
 
@@ -79,7 +76,6 @@ export class Player {
         }
     }
     
-    // ফিজিক্স আপডেট: dt হলো ডেল্টা টাইম (সেকেন্ডে)
     update(dt) {
         this.velocityY += this.gravity * dt;
         this.y += this.velocityY * dt;
@@ -118,7 +114,7 @@ export class Obstacle {
         this.y = GROUND_Y - this.height;
         this.x = canvas.width;
         this.color = '#FF00FF'; 
-        this.passed = false; // AI ট্র্যাকিং এর জন্য
+        this.passed = false; 
     }
     draw() {
         this.ctx.shadowColor = '#FF00FF';
