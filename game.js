@@ -13,6 +13,7 @@ const scoreDisplay = document.getElementById('score-display');
 const gameOverScreen = document.getElementById('game-over-screen');
 const startScreen = document.getElementById('start-screen');
 const touchArea = document.getElementById('touch-area');
+const startButton = document.getElementById('startButton');
 
 const GROUND_Y = canvas.height - 40;
 const INITIAL_SPEED = 300; 
@@ -29,7 +30,6 @@ const AI_SUCCESS_THRESHOLD = 5;
 const AI_GRAVITY_MODIFIER = 200; 
 let lastObstacleHeight = 0;
 let lastObstacleSpawnedTime = 0;
-const MIN_SPAWN_DELAY = 300; // ms
 
 // --- গেম অবজেক্ট ---
 const soundManager = new SoundManager();
@@ -48,7 +48,7 @@ let animationFrameId;
 let lastTime = 0;
 let deltaTime = 0; 
 const FPS_MULTIPLIER = 1000; 
-let jumpFlashTimer = 0; // UX/UI ফিডব্যাক
+let jumpFlashTimer = 0; 
 
 // --- ভিজ্যুয়াল লজিক: রিপিটিং গ্রাউন্ড ---
 function drawGround() {
@@ -84,10 +84,11 @@ function dynamicDifficulty() {
         GAME_SPEED += (DIFFICULTY_INCREMENT / FPS_MULTIPLIER) * deltaTime;
     }
 
+    // বুস্ট লজিক (সাউন্ড প্লে করার কোড audio.js থেকে সরানো হয়েছে)
     if (score > lastBoostScore + BOOST_SCORE_INTERVAL) {
         if (GAME_SPEED + SPEED_BOOST_AMOUNT < MAX_SPEED) {
              GAME_SPEED += SPEED_BOOST_AMOUNT;
-             soundManager.playBoost();
+             // soundManager.playBoost(); // কোড থেকে সরানো হলো
         } else {
             GAME_SPEED = MAX_SPEED;
         }
@@ -118,23 +119,16 @@ function generateObstacles() {
     if (obstacleSpawnTimer <= 0) {
         
         // --- স্মার্টার স্পাওনিং AI লজিক ---
-        let randomHeight = Math.random() * 30 + 30; // 30 to 60
+        let randomHeight = Math.random() * 30 + 30; 
         const currentTime = performance.now();
         
-        // নিয়ম ১: প্লেয়ার যদি জাম্পের মাঝপথে থাকে (পড়ার আগে), তাহলে স্পন ডিলে বাড়াও
         if (player.isJumping && player.velocityY < 0 && currentTime - lastObstacleSpawnedTime < 500) {
              obstacleSpawnTimer = 200; 
              return; 
         }
 
-        // নিয়ম ২: যদি শেষ বাধাটি লম্বা হয়, তাহলে এবার ছোট বাধা স্পন করার সম্ভাবনা বাড়াও
         if (lastObstacleHeight > 50 && Math.random() < 0.6) {
             randomHeight = Math.random() * 15 + 20; 
-        }
-
-        // নিয়ম ৩: যদি অনেকক্ষণ ধরে কোনো বাধা স্পন না হয়, তবে অবশ্যই একটি স্পন করো
-        if (currentTime - lastObstacleSpawnedTime > 1500 && Math.random() < 0.8) {
-             // উচ্চ বাধা বা ছোট বাধা, র্যান্ডম
         }
 
         const newObstacle = new Obstacle(canvas, GROUND_Y, randomHeight);
@@ -145,22 +139,18 @@ function generateObstacles() {
         obstacleSpawnTimer = spawnGap + Math.random() * 50;
 
     } else {
-        // ফিক্সড ভ্যালু ব্যবহার না করে, সময়ের সাথে কমাও
         obstacleSpawnTimer -= deltaTime; 
     }
 }
 
 // --- AI ট্র্যাকিং: সফল জাম্প গণনা ---
 function trackPlayerSuccess() {
-    // প্লেয়ারের গ্রাউন্ড লেভেল
     const playerBaseY = player.GROUND_Y - player.height;
     
-    // শুধু মাটিতে নামার সময় ট্র্যাক করবে (velocityY > 0)
     if (player.y < playerBaseY && player.velocityY > 0) {
         const nearestObstacle = obstacles[0];
         
         if (nearestObstacle && nearestObstacle.x + nearestObstacle.width < player.x) {
-            // যদি বাধাটি সফলভাবে অতিক্রম করা হয়
             if (!nearestObstacle.passed) { 
                 player.successfulJumps++; 
                 nearestObstacle.passed = true;
@@ -169,7 +159,6 @@ function trackPlayerSuccess() {
         }
     }
 }
-
 
 function checkCollision() {
     const playerHitbox = player.getHitbox();
@@ -233,7 +222,11 @@ function gameLoop(currentTime) {
     lastTime = currentTime;
     const dt = deltaTime / FPS_MULTIPLIER; 
 
-    if (gameState !== GameState.RUNNING) return;
+    if (gameState !== GameState.RUNNING) {
+        // যদি গেম চলছে না, তবুও টাচ ফ্ল্যাশ পরিষ্কার করা হয়
+        if (jumpFlashTimer > 0) jumpFlashTimer -= dt;
+        return;
+    }
 
     // A. আপডেট
     player.update(dt); 
@@ -241,7 +234,7 @@ function gameLoop(currentTime) {
     obstacles.forEach(obs => obs.update(GAME_SPEED));
     obstacles = obstacles.filter(obs => obs.x + obs.width > 0);
     checkCollision();
-    trackPlayerSuccess(); // AI ট্র্যাকিং
+    trackPlayerSuccess();
 
     // B. ড্র
     ctx.fillStyle = '#0f0a1c'; 
@@ -251,7 +244,7 @@ function gameLoop(currentTime) {
     player.draw(frameCount, gameState);
     obstacles.forEach(obs => obs.draw());
 
-    // C. UX/UI ফিডব্যাক
+    // C. UX/UI ফ্ল্যাশ
     if (jumpFlashTimer > 0) {
         ctx.fillStyle = `rgba(0, 255, 255, ${jumpFlashTimer * 0.5})`; 
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -279,7 +272,7 @@ function handleJumpInput(event) {
         startGame();
     } else if (gameState === GameState.RUNNING) {
         player.jump();
-        jumpFlashTimer = 1; // ফ্ল্যাশ শুরু
+        jumpFlashTimer = 1; 
     }
 }
 
@@ -295,7 +288,9 @@ document.addEventListener('keydown', (event) => {
 touchArea.addEventListener('mousedown', handleJumpInput); 
 touchArea.addEventListener('touchstart', handleJumpInput); 
 
-// গ্লোবালি অ্যাক্সেসযোগ্য করার জন্য
+// startButton কে ইভেন্ট লিসেনার দিয়ে হ্যান্ডেল করা হচ্ছে
+startButton.addEventListener('click', handleJumpInput);
+
 window.game = { startGame, player, gameState: GameState };
 
 window.onload = () => {
